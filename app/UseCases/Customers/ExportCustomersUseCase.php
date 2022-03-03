@@ -15,10 +15,34 @@ use App\UseCases\BaseUseCase;
 final class ExportCustomersUseCase extends BaseUseCase
 {
     /**
+     * Default location value
+     * @var string
+     */
+    const DEFAULT_LOCATION = 'Unknown';
+
+    /**
+     * Min age value
+     * @var int
+     */
+    const MIN_AGE = 18;
+
+    /**
+     * Max age value
+     * @var int
+     */
+    const MAX_AGE = 99;
+
+    /**
      * Customers repository instance
      * @var CustomersRepository
      */
     private CustomersRepository $customers_repository;
+
+    /**
+     * Available countries list
+     * @var array
+     */
+    private array $countries;
 
     /**
      * ExportCustomersUseCase constructor
@@ -46,6 +70,7 @@ final class ExportCustomersUseCase extends BaseUseCase
          * @var ExportCustomersInputDTO $input_dto
          */
         $input_dto = $this->input_dto;
+        $this->countries = config('countries.available_countries');
 
         foreach ($input_dto->getCustomers() as $customer) {
             $this->saveCustomer($customer);
@@ -68,12 +93,19 @@ final class ExportCustomersUseCase extends BaseUseCase
             return;
         }
 
-        $model_data = [];
         $model = $this->customers_repository->getFirstByFilters(
             [
                 new FilterDTO('email', '=', $customer->getEmail())
             ]
         );
+        $model_data = [
+            'name' => $this->getFirstName($customer->getFullName()),
+            'surname' => $this->getSurname($customer->getFullName()),
+            'email' => $customer->getEmail(),
+            'age' => (int)$customer->getAge(),
+            'location' => $this->getLocation($customer->getLocation())
+        ];
+        $model_data['country_code'] = $this->getCountryCode($model_data['location']);
 
         if ($model) {
             $this->customers_repository->update(
@@ -107,7 +139,28 @@ final class ExportCustomersUseCase extends BaseUseCase
         return explode(' ', $full_name)[1];
     }
 
+    /**
+     * Get location value from raw location
+     *
+     * @param string $location
+     * @return string
+     */
     private function getLocation(string $location): string
+    {
+        if (!$this->isLocationValid($location)) {
+            return self::DEFAULT_LOCATION;
+        }
+
+        return $location;
+    }
+
+    /**
+     * Get country code from location
+     *
+     * @param string $location
+     * @return string|null
+     */
+    private function getCountryCode(string $location): ?string
     {
 
     }
@@ -117,9 +170,21 @@ final class ExportCustomersUseCase extends BaseUseCase
 
     }
 
+    /**
+     * Check is age valid
+     *
+     * @param string $age
+     * @return bool
+     */
     private function isAgeValid(string $age): bool
     {
+        if (!check_is_integer($age)) {
+            return false;
+        }
 
+        $age_int = (int)$age;
+
+        return self::MAX_AGE >= $age_int && self::MIN_AGE <= $age_int;
     }
 
     private function isLocationValid(string $location): bool

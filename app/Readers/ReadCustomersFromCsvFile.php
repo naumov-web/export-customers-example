@@ -21,7 +21,7 @@ final class ReadCustomersFromCsvFile
      * Cell delimiter value
      * @var string
      */
-    const CELL_DELIMITER = ';';
+    const CELL_DELIMITER = ',';
 
     /**
      * File path value
