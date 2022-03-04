@@ -45,6 +45,14 @@ final class ExportCustomersUseCase extends BaseUseCase
     private array $countries;
 
     /**
+     * Flatten countries list
+     * @var array
+     */
+    private array $flatten_countries = [];
+
+    private array $invalid_customers = [];
+
+    /**
      * ExportCustomersUseCase constructor
      * @param CustomersRepository $customers_repository
      */
@@ -62,6 +70,20 @@ final class ExportCustomersUseCase extends BaseUseCase
     }
 
     /**
+     * Prepare data before export customers
+     *
+     * @return void
+     */
+    private function prepareData()
+    {
+        $this->countries = config('countries.available_countries');
+
+        foreach ($this->countries as $country) {
+            $this->flatten_countries[$country['name']] = $country['alpha_3'];
+        }
+    }
+
+    /**
      * @inheritDoc
      */
     public function execute(): void
@@ -70,7 +92,7 @@ final class ExportCustomersUseCase extends BaseUseCase
          * @var ExportCustomersInputDTO $input_dto
          */
         $input_dto = $this->input_dto;
-        $this->countries = config('countries.available_countries');
+        $this->prepareData();
 
         foreach ($input_dto->getCustomers() as $customer) {
             $this->saveCustomer($customer);
@@ -162,12 +184,18 @@ final class ExportCustomersUseCase extends BaseUseCase
      */
     private function getCountryCode(string $location): ?string
     {
-
+        return $this->flatten_countries[$location] ?? null;
     }
 
+    /**
+     * Check is email valid
+     *
+     * @param string $email
+     * @return bool
+     */
     private function isEmailValid(string $email): bool
     {
-
+        return is_email($email);
     }
 
     /**
@@ -187,8 +215,14 @@ final class ExportCustomersUseCase extends BaseUseCase
         return self::MAX_AGE >= $age_int && self::MIN_AGE <= $age_int;
     }
 
+    /**
+     * Check is location valid
+     *
+     * @param string $location
+     * @return bool
+     */
     private function isLocationValid(string $location): bool
     {
-
+        return isset($this->flatten_countries[$location]);
     }
 }

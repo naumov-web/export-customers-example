@@ -15,7 +15,7 @@ final class ReadCustomersFromCsvFile
      * Line delimiter value
      * @var string
      */
-    const LINE_DELIMITER = "\n";
+    const LINE_DELIMITER = "\r\n";
 
     /**
      * Cell delimiter value
