@@ -3,8 +3,11 @@
 namespace App\UseCases\Customers;
 
 use App\DTO\Common\FilterDTO;
+use App\DTO\Customers\InvalidCustomerDTO;
 use App\DTO\Input\Customers\CustomerInputDTO;
 use App\DTO\Input\Customers\ExportCustomersInputDTO;
+use App\Enums\CustomerColumnNamesEnum;
+use App\Reports\InvalidCustomersReportBuilder;
 use App\Repositories\CustomersRepository;
 use App\UseCases\BaseUseCase;
 
@@ -19,6 +22,12 @@ final class ExportCustomersUseCase extends BaseUseCase
      * @var string
      */
     const DEFAULT_LOCATION = 'Unknown';
+
+    /**
+     * Report file name
+     * @var string
+     */
+    const REPORT_FILE_NAME = 'invalid-customers.xlsx';
 
     /**
      * Min age value
@@ -50,7 +59,23 @@ final class ExportCustomersUseCase extends BaseUseCase
      */
     private array $flatten_countries = [];
 
+    /**
+     * Invalid customers list
+     * @var InvalidCustomerDTO[]
+     */
     private array $invalid_customers = [];
+
+    /**
+     * Is invalid customers report was created
+     * @var bool
+     */
+    private bool $is_invalid_customers_report_created = false;
+
+    /**
+     * Path to file with report
+     * @var string
+     */
+    private string $file_path;
 
     /**
      * ExportCustomersUseCase constructor
@@ -59,6 +84,26 @@ final class ExportCustomersUseCase extends BaseUseCase
     public function __construct(CustomersRepository $customers_repository)
     {
         $this->customers_repository = $customers_repository;
+    }
+
+    /**
+     * Get value flag, which enabled, if report was created
+     *
+     * @return bool
+     */
+    public function isInvalidCustomersReportCreated(): bool
+    {
+        return $this->is_invalid_customers_report_created;
+    }
+
+    /**
+     * Get file path value
+     *
+     * @return string
+     */
+    public function getFilePath(): string
+    {
+        return $this->file_path;
     }
 
     /**
@@ -97,6 +142,13 @@ final class ExportCustomersUseCase extends BaseUseCase
         foreach ($input_dto->getCustomers() as $customer) {
             $this->saveCustomer($customer);
         }
+
+        if (count($this->invalid_customers)) {
+            $this->file_path = base_path(self::REPORT_FILE_NAME);
+            $builder = new InvalidCustomersReportBuilder($this->file_path, $this->invalid_customers);
+            $builder->build();
+            $this->is_invalid_customers_report_created = true;
+        }
     }
 
     /**
@@ -108,10 +160,12 @@ final class ExportCustomersUseCase extends BaseUseCase
     private function saveCustomer(CustomerInputDTO $customer): void
     {
         if (!$this->isEmailValid($customer->getEmail())) {
+            $this->addInvalidCustomer($customer, CustomerColumnNamesEnum::EMAIL);
             return;
         }
 
         if (!$this->isAgeValid($customer->getAge())) {
+            $this->addInvalidCustomer($customer, CustomerColumnNamesEnum::AGE);
             return;
         }
 
@@ -224,5 +278,17 @@ final class ExportCustomersUseCase extends BaseUseCase
     private function isLocationValid(string $location): bool
     {
         return isset($this->flatten_countries[$location]);
+    }
+
+    /**
+     * Add new invalid customer
+     *
+     * @param CustomerInputDTO $customer
+     * @param string $invalid_field_name
+     * @return void
+     */
+    private function addInvalidCustomer(CustomerInputDTO $customer, string $invalid_field_name)
+    {
+        $this->invalid_customers[] = new InvalidCustomerDTO($customer, $invalid_field_name);
     }
 }

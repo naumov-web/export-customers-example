@@ -36,6 +36,12 @@ final class CustomerInputDTO extends BaseDTO
     private string $location;
 
     /**
+     * Raw row value
+     * @var string
+     */
+    private string $raw_row;
+
+    /**
      * CustomerInputDTO constructor
      * @param string $full_name
      * @param string $email
@@ -48,6 +54,19 @@ final class CustomerInputDTO extends BaseDTO
         $this->email = $email;
         $this->age = $age;
         $this->location = $location;
+    }
+
+    /**
+     * Set raw row value
+     *
+     * @param string $raw_row
+     * @return $this
+     */
+    public function setRawRow(string $raw_row): self
+    {
+        $this->raw_row = $raw_row;
+
+        return $this;
     }
 
     /**
@@ -88,5 +107,15 @@ final class CustomerInputDTO extends BaseDTO
     public function getLocation(): string
     {
         return $this->location;
+    }
+
+    /**
+     * Get raw row value
+     *
+     * @return string
+     */
+    public function getRawRow(): string
+    {
+        return $this->raw_row;
     }
 }

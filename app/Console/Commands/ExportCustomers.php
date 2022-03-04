@@ -7,6 +7,7 @@ use App\Enums\UseCaseSystemNamesEnum;
 use App\Exceptions\InvalidInputDTOException;
 use App\Exceptions\UseCaseNotFoundException;
 use App\Readers\ReadCustomersFromCsvFile;
+use App\UseCases\Customers\ExportCustomersUseCase;
 use App\UseCases\UseCaseFactory;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Container\BindingResolutionException;
@@ -17,6 +18,12 @@ use Illuminate\Contracts\Container\BindingResolutionException;
  */
 final class ExportCustomers extends Command
 {
+    /**
+     * Message, which print when
+     * @var string
+     */
+    const REPORT_WAS_CREATED = 'Report with invalid customers was created and saved to file ';
+
     /**
      * The name and signature of the console command.
      *
@@ -69,9 +76,16 @@ final class ExportCustomers extends Command
         $this->reader->setFilePath(base_path($this->argument('file_path')));
         $customers = $this->reader->getCustomers();
 
+        /**
+         * @var ExportCustomersUseCase $use_case
+         */
         $use_case = $this->use_case_factory->createUseCase(UseCaseSystemNamesEnum::EXPORT_CUSTOMERS);
         $use_case->setInputDTO(new ExportCustomersInputDTO($customers));
         $use_case->execute();
+
+        if ($use_case->isInvalidCustomersReportCreated()) {
+            $this->line(self::REPORT_WAS_CREATED . $use_case->getFilePath());
+        }
 
         return Command::SUCCESS;
     }

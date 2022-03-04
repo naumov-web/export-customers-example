@@ -64,7 +64,11 @@ final class ReadCustomersFromCsvFile
         $content = file_get_contents($this->file_path);
         $rows = explode(self::LINE_DELIMITER, $content);
 
-        foreach ($rows as $row) {
+        foreach ($rows as $i => $row) {
+            if ($i === 0) {
+                continue;
+            }
+
             $customer = $this->getCustomerDTO($row);
 
             if ($customer) {
@@ -89,11 +93,11 @@ final class ReadCustomersFromCsvFile
             return null;
         }
 
-        return new CustomerInputDTO(
+        return (new CustomerInputDTO(
             $cells[$this->customers_mapping[CustomerColumnNamesEnum::FULL_NAME]],
             $cells[$this->customers_mapping[CustomerColumnNamesEnum::EMAIL]],
             $cells[$this->customers_mapping[CustomerColumnNamesEnum::AGE]],
             $cells[$this->customers_mapping[CustomerColumnNamesEnum::LOCATION]]
-        );
+        ))->setRawRow($row);
     }
 }
